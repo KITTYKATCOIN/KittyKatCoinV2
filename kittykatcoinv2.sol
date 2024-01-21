@@ -867,7 +867,7 @@ contract CustomToken is ERC20, Ownable {
         listingWallet = msg.sender;
 
         launchStartTime = block.timestamp;
-        launchEndTime = launchStartTime + 24 hours;
+        launchEndTime = launchStartTime + 1 seconds;
     }
 
     address public uniswapV2Pair;
