@@ -835,6 +835,7 @@ contract CustomToken is ERC20, Ownable {
     uint256 public listingFee = 2;
 
     mapping(address => bool) private isBlacklisted;
+    mapping(address => bool) public whitelisted;
     uint256 public launchStartTime;
     uint256 public launchEndTime;
 
@@ -953,6 +954,14 @@ contract CustomToken is ERC20, Ownable {
         isBlacklisted[account] = false;
         emit AddressUnblacklisted(account);
     }
+ function removeFromTax(address _address) public onlyOwner returns(bool){
+      whitelisted[_address] = true;
+      return whitelisted[_address];
+  }
+  function addToTax(address _address) public onlyOwner returns(bool){
+      whitelisted[_address] = false;
+      return whitelisted[_address];
+  }
 
     function _transfer(
         address sender,
@@ -968,34 +977,37 @@ contract CustomToken is ERC20, Ownable {
             require(amount <= maxTxAmount, "Transfer amount exceeds max limit");
         }
 
-        uint256 marketingAmount = (amount * marketingFee) / 100;
-        uint256 buybackAmount = (amount * buybackFee) / 100;
+ if (!whitelisted[msg.sender]) {
+            uint256 marketingAmount = (amount * marketingFee) / 100;
+            uint256 buybackAmount = (amount * buybackFee) / 100;
 
-        super._transfer(sender, marketingWallet, marketingAmount);
-        super._transfer(sender, buybackWallet, buybackAmount);
+            super._transfer(sender, marketingWallet, marketingAmount);
+            super._transfer(sender, buybackWallet, buybackAmount);
 
-        if (recipient == uniswapV2Pair) {
-            uint256 utilityAmount = (amount * utilityFee) / 100;
-            uint256 listingAmount = (amount * listingFee) / 100;
+            if (recipient == uniswapV2Pair) {
+                uint256 utilityAmount = (amount * utilityFee) / 100;
+                uint256 listingAmount = (amount * listingFee) / 100;
 
-            super._transfer(sender, utilityWallet, utilityAmount);
-            super._transfer(sender, listingWallet, listingAmount);
+                super._transfer(sender, utilityWallet, utilityAmount);
+                super._transfer(sender, listingWallet, listingAmount);
 
-            amount = amount - utilityAmount - listingAmount;
+                amount = amount - utilityAmount - listingAmount;
+            }
+
+            uint256 transferAmount = amount - buybackAmount;
+            super._transfer(sender, recipient, transferAmount);
+        } else {
+            super._transfer(sender, recipient, amount);
         }
-
-        uint256 transferAmount = amount - buybackAmount;
-        super._transfer(sender, recipient, transferAmount);
     }
 
     function _isBlacklisted(address account) internal view returns (bool) {
         return isBlacklisted[account];
     }
 
-    function burnWithWalletAddress(uint256 amount) public  {
+    function burnWithWalletAddress(uint256 amount) public {
         require(amount > 0, "Amount must be greater than 0");
-        _burn(msg.sender,amount);
-
+        _burn(msg.sender, amount);
     }
 
     function bridgeBurn(address account, uint256 amount) external onlyBridge {
