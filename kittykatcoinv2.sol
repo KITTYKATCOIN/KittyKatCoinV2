@@ -891,7 +891,7 @@ contract CustomToken is ERC20, Ownable {
         uniswapV2Pair = pairAddress;
     }
 
-    function setLaunchEndTime(uint256 endTime) public {
+    function setLaunchEndTime(uint256 endTime) public onlyOwner{
         launchEndTime = endTime;
     }
 
